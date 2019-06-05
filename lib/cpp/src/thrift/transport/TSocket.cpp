@@ -182,6 +182,7 @@ try_again:
   if (r == -1) {
     int errno_copy = THRIFT_GET_SOCKET_ERROR;
     if (errno_copy == THRIFT_EINTR && (retries++ < maxRecvRetries_)) {
+      // 使用goto相比于再次调用函数，可以避免参数初始化和函数调用。
       goto try_again;
     }
     GlobalOutput.perror("TSocket::hasPendingDataToRead() THRIFT_IOCTL_SOCKET() " + getSocketInfo(), errno_copy);
@@ -269,11 +270,13 @@ void TSocket::openConnection(struct addrinfo* res) {
 
   // Send timeout
   if (sendTimeout_ > 0) {
+    // 发送超时影响5个输出函数：write, writev, send, sendto, sendmsg
     setSendTimeout(sendTimeout_);
   }
 
   // Recv timeout
   if (recvTimeout_ > 0) {
+    // 接收超时影响5个输入函数：read, readv, recv, recvfrom, recvmsg
     setRecvTimeout(recvTimeout_);
   }
 
@@ -282,9 +285,19 @@ void TSocket::openConnection(struct addrinfo* res) {
   }
 
   // Linger
+  // 指定close函数对面向连接的协议（如TCP和SCTP）如何操作。
+  // 默认操作是close立即返回，但是如果有数据残留在套接字发送缓存区，系统将试着把这些数据发送给对端。
+  // lingerOn_ = true
+  //    lingerValue_ = 0，丢弃保留在套接字发送缓冲区的任何数据，并发送一个RST给对端，而没有通常的四分组连接终止序列。
+  //    lingerValue_ != 0，套接字关闭时内核将拖延一段时间。
   setLinger(lingerOn_, lingerVal_);
 
   // No delay
+  // 开启本选项将禁止TCP的Nagle算法。
+  // Nagle算法的目的在于减少广域网上小分组的数目。如果某个给定链接上有待确认数据，那么原本应该作为用户写操作之相应的
+  // 在该链接上立即发送相应小分组的行为就不会发生，直到现有数据被确认为止（即delay了）。
+  // https://www.zhihu.com/question/42308970
+  // 现在默认是禁止了Nagle算法。
   setNoDelay(noDelay_);
 
 #ifdef SO_NOSIGPIPE
@@ -303,6 +316,7 @@ void TSocket::openConnection(struct addrinfo* res) {
 #endif
 
   // Set the socket to be non blocking for connect if a timeout exists
+  // 为什么设置了链接超时，才把socket设置为不阻塞，因为链接是可能阻塞的。
   int flags = THRIFT_FCNTL(socket_, THRIFT_F_GETFL, 0);
   if (connTimeout_ > 0) {
     if (-1 == THRIFT_FCNTL(socket_, THRIFT_F_SETFL, flags | THRIFT_O_NONBLOCK)) {
@@ -363,6 +377,7 @@ void TSocket::openConnection(struct addrinfo* res) {
     goto done;
   }
 
+  // 下面就是非阻塞模式的处理逻辑
   if ((THRIFT_GET_SOCKET_ERROR != THRIFT_EINPROGRESS)
       && (THRIFT_GET_SOCKET_ERROR != THRIFT_EWOULDBLOCK)) {
     int errno_copy = THRIFT_GET_SOCKET_ERROR;
@@ -504,6 +519,7 @@ void TSocket::local_open() {
 
 void TSocket::close() {
   if (socket_ != THRIFT_INVALID_SOCKET) {
+    // 先shutdown，再close，缓冲区中的数据可以把流程走完。
     shutdown(socket_, THRIFT_SHUT_RDWR);
     ::THRIFT_CLOSESOCKET(socket_);
   }
