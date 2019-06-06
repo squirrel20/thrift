@@ -3,7 +3,7 @@
 # Licensed under the MIT License. See https://go.microsoft.com/fwlink/?linkid=2090316 for license information.
 #-------------------------------------------------------------------------------------------------------------
 
-FROM debian:9
+FROM ubuntu:19.10
 
 # Install git, process tools
 RUN apt-get update && apt-get -y install git procps
