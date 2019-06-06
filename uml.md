@@ -1,6 +1,6 @@
 # uml
 
-puml语法：[https://www.heqiangfly.com/2017/07/08/development-tool-markdown-plant-uml/](https://www.heqiangfly.com/2017/07/08/development-tool-markdown-plant-uml/)
+puml语法：[http://plantuml.com/zh/](http://plantuml.com/zh/)
 
 ```puml
 Title "Transport uml"
@@ -21,7 +21,6 @@ namespace apache.thrift.transport {
     TVirtualTransport <|-- TFramedTransport
     TTransportFactory <|-- TFramedTransportFactory
     TVirtualTransport <|-- TMemoryBuffer
-}
 
 interface apache.thrift.transport.TTransport {
     + virtual bool isOpen() const
@@ -200,4 +199,78 @@ class apache.thrift.transport.TMemoryBuffer {
     # uint32_t maxBufferSize_
     # bool owner_
 }
+
+class TSSLSocket {
+
+}
+TSocket <-- TSSLSocket
+
+class THeaderTransport {
+
+}
+TVirtualTransport <-- THeaderTransport
+
+}
+
+Title "Protocol uml"
+namespace apache.thrift.protocol {
+interface TProtocolFactory {
+
+}
+interface TProtocol {
+
+}
+interface TDummyProtocol {
+
+}
+TProtocol <|.. TDummyProtocol
+
+abstract TProtocolDefaults {
+
+}
+TProtocol <|-- TProtocolDefaults
+
+abstract TVirtualProtocol {
+
+}
+TProtocolDefaults <|-- TVirtualProtocol
+
+class TBinaryProtocolT << class Transport_, class ByteOrder_ = TNetworkBigEndian >> {
+}
+TVirtualProtocol <|-- TBinaryProtocolT
+
+class TJSONProtocol {
+
+}
+TVirtualProtocol <|-- TJSONProtocol
+
+class THeaderProtocol {
+
+}
+TVirtualProtocol <|-- THeaderProtocol
+THeaderProtocol *-- apache.thrift.transport.THeaderTransport
+THeaderProtocol *-- TCompactProtocolT
+
+class TCompactProtocolT << class Transport_ >> {
+
+}
+TVirtualProtocol <|-- TCompactProtocolT
+
+class TBinaryProtocolFactoryT << class Transport_, calss ByteOrder_ = TNetworkBigEndian >> {
+
+}
+TProtocolFactory <|-- TBinaryProtocolFactoryT
+
+class TJSONProtocolFactory {
+
+}
+TProtocolFactory <|-- TJSONProtocolFactory
+
+class THeaderProtocolFactory {
+
+}
+TProtocolFactory <|-- THeaderProtocolFactory
+
+}
+
 ```
